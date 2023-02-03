@@ -1,24 +1,36 @@
-import { Form, ActionPanel, Action, showToast } from "@raycast/api";
+import { Action, ActionPanel, Form } from "@raycast/api";
 import { useForm, FormValidation, useFetch } from "@raycast/utils";
+import { useState } from "react";
 
-type Values = {
+interface Values {
   word: string;
   dialect: string;
-};
+}
+
+const API_URL = "https://api.dictionaryapi.dev/api/v2/entries/en/";
 
 export default function Command() {
-  // function validateWord(word: string){
-  //   if(word === "") return 
-  // }
-  // function queryAPI(word: string){
-  //   const url = "https://api.dictionaryapi.dev/api/v2/entries/en/"
-  // }
-  //   const { isLoading, data, revalidate } = useFetch(values.word);
+  const [word, setWord] = useState<string | undefined>();
+  const { isLoading, data } = useFetch(API_URL + word, {
+    execute: word !== undefined,
+    onData: (data) => console.log(data)
+  });
 
-  function handleSubmit(values: Values) {
-    console.log(values);
-    showToast({ title: "Submitted form", message: "See logs for submitted values" });
-  }
+  const { handleSubmit, itemProps } = useForm<Values>({
+    onSubmit(values) {
+      setWord(values.word);
+    },
+    validation: {
+      dialect: FormValidation.Required,
+      word: (value) => {
+        if (value && !value.match(/^[A-Za-z]+$/)) {
+          return "Word contains non-alphabetic characters.";
+        } else if (!value) {
+          return "A word is required.";
+        }
+      }
+    }
+  });
 
   return (
     <Form
@@ -28,8 +40,8 @@ export default function Command() {
         </ActionPanel>
       }
     >
-      <Form.TextField id="word" title="Word" />
-      <Form.Dropdown id="dialect" title="Dialect">
+      <Form.TextField title="Word" {...itemProps.word} />
+      <Form.Dropdown title="Dialect" {...itemProps.dialect}>
         <Form.Dropdown.Item value="uk" title="🇬🇧 United Kingdom" />
         <Form.Dropdown.Item value="us" title="🇺🇸 United States" />
       </Form.Dropdown>
